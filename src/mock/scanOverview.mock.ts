@@ -35,7 +35,7 @@ export const mockScanDetails: ScanDetails = {
   scanType: 'Full Scan',
   profile: 'OWASP Top 10',
   authentication: true,
-  createdBy: 'abhishek.jain@successive.tech',
+  createdBy: 'gourav@dz.com',
   tags: ['production', 'quarterly'],
 };
 

@@ -88,7 +88,7 @@ export function SignupPage({ onSignup, onGoToLogin }: Props) {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Abhishek Jain"
+                placeholder="Gourav Ranjan"
                 className="w-full h-10 px-3 text-sm text-primary bg-white border border-border rounded-lg outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 transition placeholder:text-muted"
               />
             </div>

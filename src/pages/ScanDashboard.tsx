@@ -30,14 +30,15 @@ const tabs = [
 
 const defaultFilters: IssueFiltersType = { severity: [], status: [], category: [] };
 
-const SCAN_URL = 'https://demo.testfire.net';
-const SCAN_NAME = 'DAST 2026-02-11 File Name';
-
 interface Props {
   defaultTab?: 'overview' | 'issues';
+  scanName?: string;
+  scanUrl?: string;
 }
 
-export function ScanDashboard({ defaultTab = 'overview' }: Props) {
+export function ScanDashboard({ defaultTab = 'overview', scanName = 'DAST 2026-02-11 File Name', scanUrl = 'https://demo.testfire.net' }: Props) {
+  const SCAN_URL = scanUrl;
+  const SCAN_NAME = scanName;
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<IssueFiltersType>(defaultFilters);

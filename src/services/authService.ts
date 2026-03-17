@@ -2,8 +2,8 @@ import type { AuthUser, LoginCredentials, SignupData } from '../types/auth.types
 
 const MOCK_USER: AuthUser = {
   id: 'user-001',
-  name: 'Abhishek Jain',
-  email: 'abhishek.jain@successive.tech',
+  name: 'Gourav Ranjan',
+  email: 'gourav@dz.com',
 };
 
 // Swap these with real API calls when backend is ready.

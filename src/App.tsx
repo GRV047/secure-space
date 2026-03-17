@@ -5,7 +5,7 @@ import { SetupPage } from './pages/SetupPage';
 import { ScansPage } from './pages/ScansPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
-import { addScan } from './services/scanListService';
+import { addScan, getScans } from './services/scanListService';
 import type { AuthUser } from './types/auth.types';
 import type { ScanEntry } from './types/scanList.types';
 
@@ -33,6 +33,8 @@ export default function App() {
   const [user, setUser]                 = useState<AuthUser | null>(null);
   const [activeScanId, setActiveScanId] = useState<string>('scan-2024-001');
   const [defaultTab, setDefaultTab]     = useState<'overview' | 'issues'>('overview');
+  const [activeScanName, setActiveScanName] = useState<string>('');
+  const [activeScanUrl, setActiveScanUrl]   = useState<string>('');
 
   // Ref so the popstate handler always reads the latest user without re-registering
   const userRef = useRef<AuthUser | null>(null);
@@ -110,14 +112,21 @@ export default function App() {
     pushPage('scans');
   }
 
-  function handleViewScan(scanId: string) {
+  function setActiveScan(scanId: string) {
+    const entry = getScans().find((s) => s.id === scanId);
     setActiveScanId(scanId);
+    setActiveScanName(entry?.name ?? '');
+    setActiveScanUrl(entry?.url ?? '');
+  }
+
+  function handleViewScan(scanId: string) {
+    setActiveScan(scanId);
     setDefaultTab('overview');
     pushPage('dashboard', { scanId, tab: 'overview' });
   }
 
   function handleViewIssues(scanId: string) {
-    setActiveScanId(scanId);
+    setActiveScan(scanId);
     setDefaultTab('issues');
     pushPage('dashboard', { scanId, tab: 'issues' });
   }
@@ -155,7 +164,7 @@ export default function App() {
         <ScansPage onViewScan={handleViewScan} onViewIssues={handleViewIssues} />
       )}
       {page === 'dashboard' && (
-        <ScanDashboard key={activeScanId} defaultTab={defaultTab} />
+        <ScanDashboard key={activeScanId} defaultTab={defaultTab} scanName={activeScanName} scanUrl={activeScanUrl} />
       )}
     </PageLayout>
   );
