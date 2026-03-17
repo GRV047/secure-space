@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/gourav.dhole/Desktop/Gourav''''''''s Work Space/POC_Successive/**)",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Read(//c/Users/gourav.dhole/Desktop/Gourav''''s Work Space/POC_Successive/securesphere/**)"
+    ]
+  }
+}

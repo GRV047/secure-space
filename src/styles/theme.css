@@ -1,0 +1,8 @@
+/* Minimal chart CSS variables used by Recharts (requires string fill/stroke values). */
+:root {
+  --chart-critical: #DC2626;
+  --chart-high:     #EA580C;
+  --chart-medium:   #D97706;
+  --chart-low:      #0891B2;
+  --chart-info:     #2563EB;
+}
