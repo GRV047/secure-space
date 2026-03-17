@@ -1,18 +1,24 @@
-import { Shield, LayoutDashboard, Bug, Settings, ChevronRight } from 'lucide-react';
+import { Shield, ScanLine, Settings2, ChevronRight } from 'lucide-react';
+
+type NavPage = 'setup' | 'scans';
 
 interface NavItem {
   icon: React.ReactNode;
   label: string;
-  active?: boolean;
+  page: NavPage;
+}
+
+interface Props {
+  currentPage: string;
+  onNavigate: (page: NavPage) => void;
 }
 
 const navItems: NavItem[] = [
-  { icon: <LayoutDashboard size={16} />, label: 'Dashboard', active: true },
-  { icon: <Bug size={16} />, label: 'Issues' },
-  { icon: <Settings size={16} />, label: 'Settings' },
+  { icon: <Settings2 size={16} />, label: 'Setup', page: 'setup' },
+  { icon: <ScanLine size={16} />,  label: 'Scans', page: 'scans' },
 ];
 
-export function Sidebar() {
+export function Sidebar({ currentPage, onNavigate }: Props) {
   return (
     <aside className="w-sidebar bg-panel border-r border-border flex flex-col h-full shrink-0">
       {/* Logo */}
@@ -25,20 +31,24 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="p-2 flex-1">
-        {navItems.map((item) => (
-          <button
-            key={item.label}
-            className={
-              item.active
-                ? 'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-card-hover text-primary text-[13px] font-medium mb-0.5 border-none cursor-pointer text-left transition-colors'
-                : 'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-secondary text-[13px] mb-0.5 border-none cursor-pointer text-left hover:bg-card-hover hover:text-primary transition-colors'
-            }
-          >
-            {item.icon}
-            <span className="flex-1">{item.label}</span>
-            {item.active && <ChevronRight size={14} className="text-muted" />}
-          </button>
-        ))}
+        {navItems.map((item) => {
+          const isActive = currentPage === item.page;
+          return (
+            <button
+              key={item.page}
+              onClick={() => onNavigate(item.page)}
+              className={
+                isActive
+                  ? 'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-card-hover text-primary text-[13px] font-medium mb-0.5 border-none cursor-pointer text-left transition-colors'
+                  : 'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-secondary text-[13px] mb-0.5 border-none cursor-pointer text-left hover:bg-card-hover hover:text-primary transition-colors'
+              }
+            >
+              {item.icon}
+              <span className="flex-1">{item.label}</span>
+              {isActive && <ChevronRight size={14} className="text-muted" />}
+            </button>
+          );
+        })}
       </nav>
 
       {/* Footer */}

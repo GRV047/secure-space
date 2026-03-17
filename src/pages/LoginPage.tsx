@@ -12,7 +12,6 @@ export function LoginPage({ onLogin, onGoToSignup }: Props) {
   const [email, setEmail]           = useState('');
   const [password, setPassword]     = useState('');
   const [showPassword, setShow]     = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState('');
 
@@ -72,12 +71,6 @@ export function LoginPage({ onLogin, onGoToSignup }: Props) {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-medium text-primary">Password</label>
-                <button
-                  type="button"
-                  className="text-xs text-accent hover:underline focus:outline-none"
-                >
-                  Forgot password?
-                </button>
               </div>
               <div className="relative">
                 <input
@@ -100,21 +93,6 @@ export function LoginPage({ onLogin, onGoToSignup }: Props) {
               </div>
             </div>
 
-            {/* Remember me */}
-            {/* <div className="flex items-center gap-2">
-              <input
-                id="remember"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded border-border accent-accent cursor-pointer"
-              />
-              <label htmlFor="remember" className="text-xs text-secondary cursor-pointer select-none">
-                Remember me for 30 days
-              </label>
-            </div> */}
-
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}

@@ -33,8 +33,12 @@ const defaultFilters: IssueFiltersType = { severity: [], status: [], category: [
 const SCAN_URL = 'https://demo.testfire.net';
 const SCAN_NAME = 'DAST 2026-02-11 File Name';
 
-export function ScanDashboard() {
-  const [activeTab, setActiveTab] = useState('overview');
+interface Props {
+  defaultTab?: 'overview' | 'issues';
+}
+
+export function ScanDashboard({ defaultTab = 'overview' }: Props) {
+  const [activeTab, setActiveTab] = useState<string>(defaultTab);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<IssueFiltersType>(defaultFilters);
   const [pickerDate, setPickerDate] = useState<Date>(new Date(2026, 1, 11));

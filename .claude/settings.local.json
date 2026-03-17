@@ -5,7 +5,9 @@
       "Bash(npm run:*)",
       "Bash(npm install:*)",
       "Read(//c/Users/gourav.dhole/Desktop/Gourav''''s Work Space/POC_Successive/securesphere/**)",
-      "Read(//c/Users/gourav.dhole/Desktop/Gourav''s Work Space/POC_Successive/securesphere/src/components/layout/**)"
+      "Read(//c/Users/gourav.dhole/Desktop/Gourav''s Work Space/POC_Successive/securesphere/src/components/layout/**)",
+      "Read(//c/Users/gourav.dhole/Desktop/Gourav''s Work Space/POC_Successive/**)",
+      "Bash(grep -E \"\\\\.\\(tsx?|json|js\\)$\")"
     ]
   }
 }
