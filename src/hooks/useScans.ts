@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { getScans, deleteScan } from '../services/scanListService';
+import { getScans, deleteScan, rerunScan, updateScan } from '../services/scanListService';
 import type { ScanEntry } from '../types/scanList.types';
 
 export function useScans() {
@@ -10,9 +10,19 @@ export function useScans() {
     setScans(getScans());
   }, []);
 
+  const rerun = useCallback((id: string) => {
+    rerunScan(id);
+    setScans(getScans());
+  }, []);
+
+  const update = useCallback((id: string, patch: Partial<Omit<ScanEntry, 'id'>>) => {
+    updateScan(id, patch);
+    setScans(getScans());
+  }, []);
+
   const refresh = useCallback(() => {
     setScans(getScans());
   }, []);
 
-  return { scans, remove, refresh };
+  return { scans, remove, rerun, update, refresh };
 }

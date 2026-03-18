@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { BarChart2, Bug, Calendar, ChevronDown, Copy, Filter, Pause, Pencil, X, XCircle } from 'lucide-react';
+import { BarChart2, Bug, ChevronDown, Copy, Filter, Pause, Pencil, RefreshCw, X, XCircle } from 'lucide-react';
+import type { ScanStatus } from '../types/scanList.types';
 import { Tabs } from '../components/ui/Tabs';
 import { DatePickerButton } from '../components/ui/DatePickerButton';
 import { VulnerabilityCountCard } from '../components/overview/VulnerabilityCountCard';
@@ -13,7 +14,6 @@ import { AppExplorationData } from '../components/overview/AppExplorationData';
 import { ExecutionLog } from '../components/overview/ExecutionLog';
 import { IssueTable } from '../components/issues/IssueTable';
 import { IssueFilterPanel } from '../components/issues/IssueFilterPanel';
-import { DateRangePanel } from '../components/issues/DateRangePanel';
 import { IssueSearchBar } from '../components/issues/IssueSearchBar';
 import { useScanOverview } from '../hooks/useScanOverview';
 import { useScanTimeline } from '../hooks/useScanTimeline';
@@ -30,27 +30,38 @@ const tabs = [
 
 const defaultFilters: IssueFiltersType = { severity: [], status: [], category: [] };
 
+const ACTIVE_STATUSES: ScanStatus[] = ['In-Progress', 'Initialized'];
+
 interface Props {
   defaultTab?: 'overview' | 'issues';
   scanName?: string;
   scanUrl?: string;
+  scanStatus?: ScanStatus;
+  onEdit?: () => void;
+  onRestart?: () => void;
 }
 
-export function ScanDashboard({ defaultTab = 'overview', scanName = 'DAST 2026-02-11 File Name', scanUrl = 'https://demo.testfire.net' }: Props) {
+export function ScanDashboard({
+  defaultTab = 'overview',
+  scanName = 'DAST 2026-02-11 File Name',
+  scanUrl = 'https://demo.testfire.net',
+  scanStatus = 'Completed',
+  onEdit,
+  onRestart,
+}: Props) {
   const SCAN_URL = scanUrl;
   const SCAN_NAME = scanName;
+  const isActive = ACTIVE_STATUSES.includes(scanStatus);
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<IssueFiltersType>(defaultFilters);
   const [pickerDate, setPickerDate] = useState<Date>(new Date(2026, 1, 11));
   const [manageScanOpen, setManageScanOpen] = useState(false);
   const [filtersOpen, setFiltersOpen]       = useState(false);
-  const [datesOpen, setDatesOpen]           = useState(false);
   const [dateRange, setDateRange]           = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null });
   const [copied, setCopied]                 = useState(false);
   const manageScanRef  = useRef<HTMLDivElement>(null);
   const filtersRef     = useRef<HTMLDivElement>(null);
-  const datesRef       = useRef<HTMLDivElement>(null);
 
   const { overview, details, explorationData, loading: ovLoading } = useScanOverview(SCAN_ID);
   const { loading: tlLoading } = useScanTimeline(SCAN_ID);
@@ -141,18 +152,35 @@ export function ScanDashboard({ defaultTab = 'overview', scanName = 'DAST 2026-0
           </div>
 
           {manageScanOpen && (
-            <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-border rounded-xl shadow-lg py-1 w-36">
-              <button className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-page transition-colors flex items-center gap-2">
-                <XCircle size={14} className="text-muted" /> Cancel
-              </button>
-              <button className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-page transition-colors flex items-center gap-2">
-                <Pause size={14} className="text-muted" /> Pause
-              </button>
+            <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-xl shadow-lg py-1 w-36">
+              {isActive ? (
+                <>
+                  <button
+                    onClick={() => setManageScanOpen(false)}
+                    className="w-full text-left px-4 py-2 text-sm text-critical hover:bg-critical/5 transition-colors flex items-center gap-2"
+                  >
+                    <XCircle size={14} /> Cancel
+                  </button>
+                  <button
+                    onClick={() => setManageScanOpen(false)}
+                    className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-card-hover transition-colors flex items-center gap-2"
+                  >
+                    <Pause size={14} className="text-muted" /> Pause
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => { setManageScanOpen(false); onRestart?.(); }}
+                  className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-card-hover transition-colors flex items-center gap-2"
+                >
+                  <RefreshCw size={14} className="text-info" /> Restart
+                </button>
+              )}
               <button
-                className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-page transition-colors flex items-center gap-2"
-                onClick={() => setManageScanOpen(false)}
+                onClick={() => { setManageScanOpen(false); onEdit?.(); }}
+                className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-card-hover transition-colors flex items-center gap-2"
               >
-                <Pencil size={14} className="text-muted" /> Rename
+                <Pencil size={14} className="text-muted" /> Edit
               </button>
             </div>
           )}
@@ -218,10 +246,10 @@ export function ScanDashboard({ defaultTab = 'overview', scanName = 'DAST 2026-0
           <div className="flex items-center gap-2">
             <IssueSearchBar value={search} onChange={setSearch} />
 
-            {/* Filters button + panel */}
+            {/* Filters button + panel (includes date range) */}
             <div ref={filtersRef} className="relative">
               <button
-                onClick={() => { setFiltersOpen((v) => !v); setDatesOpen(false); }}
+                onClick={() => setFiltersOpen((v) => !v)}
                 className={`flex items-center gap-1.5 text-xs border rounded px-3 py-1.5 transition-colors ${
                   filtersOpen || filterCount > 0
                     ? 'border-accent text-accent bg-[#F0F4FF]'
@@ -239,34 +267,10 @@ export function ScanDashboard({ defaultTab = 'overview', scanName = 'DAST 2026-0
                 <IssueFilterPanel
                   filters={filters}
                   onChange={setFilters}
+                  dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
                   onClose={() => setFiltersOpen(false)}
-                  onClear={() => setFilters(defaultFilters)}
-                />
-              )}
-            </div>
-
-            {/* Dates button + panel */}
-            <div ref={datesRef} className="relative">
-              <button
-                onClick={() => { setDatesOpen((v) => !v); setFiltersOpen(false); }}
-                className={`flex items-center gap-1.5 text-xs border rounded px-3 py-1.5 transition-colors ${
-                  datesOpen || dateRange.from
-                    ? 'border-accent text-accent bg-[#F0F4FF]'
-                    : 'border-border text-secondary hover:bg-page'
-                }`}
-              >
-                <Calendar size={13} /> Dates
-                {dateRange.from && (
-                  <span className="ml-0.5 bg-accent text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-semibold">
-                    1
-                  </span>
-                )}
-              </button>
-              {datesOpen && (
-                <DateRangePanel
-                  range={dateRange}
-                  onChange={setDateRange}
-                  onClose={() => setDatesOpen(false)}
+                  onClear={() => { setFilters(defaultFilters); setDateRange({ from: null, to: null }); }}
                 />
               )}
             </div>
