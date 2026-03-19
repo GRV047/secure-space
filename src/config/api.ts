@@ -2,7 +2,8 @@
  * Central API client.
  * All services use `apiRequest` so base URL and headers are managed in one place.
  */
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
+export { API_BASE_URL } from './api.config';
+import { API_BASE_URL } from './api.config';
 
 export async function apiRequest<T>(
   path: string,

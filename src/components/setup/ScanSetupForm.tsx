@@ -3,11 +3,13 @@ import { Plus, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { createScan } from '../../services/scanListService';
 import type { ScanEntry } from '../../types/scanList.types';
+import type { Project } from '../../types/project.types';
 
 interface Props {
   onStartScan: (scan: ScanEntry) => void;
   initialScan?: ScanEntry;
   onUpdateScan?: (id: string, patch: Partial<Omit<ScanEntry, 'id'>>) => void;
+  projects: Project[];
 }
 
 const inputClass =
@@ -23,7 +25,7 @@ function parseTags(raw: string): string[] {
     .filter(Boolean);
 }
 
-export function ScanSetupForm({ onStartScan, initialScan, onUpdateScan }: Props) {
+export function ScanSetupForm({ onStartScan, initialScan, onUpdateScan, projects }: Props) {
   const isEdit = Boolean(initialScan);
 
   const [projectId, setProjectId] = useState('');
@@ -95,7 +97,7 @@ export function ScanSetupForm({ onStartScan, initialScan, onUpdateScan }: Props)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Project ID — only shown when creating */}
+      {/* Project selector — only shown when creating */}
       {!isEdit && (
         <div>
           <label className={labelClass}>Project ID</label>
@@ -199,7 +201,7 @@ export function ScanSetupForm({ onStartScan, initialScan, onUpdateScan }: Props)
         variant="primary"
         size="lg"
         className="w-full justify-center mt-2"
-        disabled={loading || !name.trim() || !url.trim() || (!isEdit && !projectId.trim())}
+        disabled={loading || !name.trim() || !url.trim() || (!isEdit && (projects.length === 0 || !projectId))}
       >
         {loading ? 'Starting…' : isEdit ? 'Save Changes' : 'Start Scan'}
       </Button>
