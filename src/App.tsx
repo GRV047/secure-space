@@ -1,13 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { PageLayout } from './components/layout/PageLayout';
-import { ScanDashboard } from './pages/ScanDashboard';
-import { SetupPage } from './pages/SetupPage';
-import { ScansPage } from './pages/ScansPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
-import { addScan, getScans } from './services/scanListService';
+import { addScan, getScans, rerunScan, updateScan } from './services/scanListService';
 import type { AuthUser } from './types/auth.types';
-import type { ScanEntry } from './types/scanList.types';
+import type { ScanEntry, ScanStatus } from './types/scanList.types';
+
+// Heavy authenticated pages — loaded only after login so the login screen renders immediately.
+const SetupPage     = lazy(() => import('./pages/SetupPage').then((m) => ({ default: m.SetupPage })));
+const ScansPage     = lazy(() => import('./pages/ScansPage').then((m) => ({ default: m.ScansPage })));
+const ScanDashboard = lazy(() => import('./pages/ScanDashboard').then((m) => ({ default: m.ScanDashboard })));
 
 type Page = 'login' | 'signup' | 'setup' | 'scans' | 'dashboard';
 type NavPage = 'setup' | 'scans';
@@ -33,8 +35,10 @@ export default function App() {
   const [user, setUser]                 = useState<AuthUser | null>(null);
   const [activeScanId, setActiveScanId] = useState<string>('scan-2024-001');
   const [defaultTab, setDefaultTab]     = useState<'overview' | 'issues'>('overview');
-  const [activeScanName, setActiveScanName] = useState<string>('');
-  const [activeScanUrl, setActiveScanUrl]   = useState<string>('');
+  const [activeScanName,   setActiveScanName]   = useState<string>('');
+  const [activeScanUrl,    setActiveScanUrl]    = useState<string>('');
+  const [activeScanStatus, setActiveScanStatus] = useState<ScanStatus>('Completed');
+  const [editScan,         setEditScan]         = useState<ScanEntry | undefined>(undefined);
 
   // Ref so the popstate handler always reads the latest user without re-registering
   const userRef = useRef<AuthUser | null>(null);
@@ -109,7 +113,19 @@ export default function App() {
 
   function handleStartScan(scan: ScanEntry) {
     addScan(scan);
+    setEditScan(undefined);
     pushPage('scans');
+  }
+
+  function handleUpdateScan(id: string, patch: Partial<Omit<ScanEntry, 'id'>>) {
+    updateScan(id, patch);
+    setEditScan(undefined);
+    pushPage('scans');
+  }
+
+  function handleEditScan(scan: ScanEntry) {
+    setEditScan(scan);
+    pushPage('setup');
   }
 
   function setActiveScan(scanId: string) {
@@ -117,6 +133,17 @@ export default function App() {
     setActiveScanId(scanId);
     setActiveScanName(entry?.name ?? '');
     setActiveScanUrl(entry?.url ?? '');
+    setActiveScanStatus(entry?.status ?? 'Completed');
+  }
+
+  function handleDashboardEdit() {
+    const entry = getScans().find((s) => s.id === activeScanId);
+    if (entry) handleEditScan(entry);
+  }
+
+  function handleDashboardRestart() {
+    rerunScan(activeScanId);
+    pushPage('scans');
   }
 
   function handleViewScan(scanId: string) {
@@ -157,15 +184,25 @@ export default function App() {
       currentPage={page}
       onNavigate={handleNavigate}
     >
-      {page === 'setup' && (
-        <SetupPage onStartScan={handleStartScan} />
-      )}
-      {page === 'scans' && (
-        <ScansPage onViewScan={handleViewScan} onViewIssues={handleViewIssues} />
-      )}
-      {page === 'dashboard' && (
-        <ScanDashboard key={activeScanId} defaultTab={defaultTab} scanName={activeScanName} scanUrl={activeScanUrl} />
-      )}
+      <Suspense fallback={<div className="flex-1" />}>
+        {page === 'setup' && (
+          <SetupPage onStartScan={handleStartScan} editScan={editScan} onUpdateScan={handleUpdateScan} />
+        )}
+        {page === 'scans' && (
+          <ScansPage onViewScan={handleViewScan} onViewIssues={handleViewIssues} onEditScan={handleEditScan} />
+        )}
+        {page === 'dashboard' && (
+          <ScanDashboard
+            key={activeScanId}
+            defaultTab={defaultTab}
+            scanName={activeScanName}
+            scanUrl={activeScanUrl}
+            scanStatus={activeScanStatus}
+            onEdit={handleDashboardEdit}
+            onRestart={handleDashboardRestart}
+          />
+        )}
+      </Suspense>
     </PageLayout>
   );
 }

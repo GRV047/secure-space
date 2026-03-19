@@ -2,16 +2,17 @@ import { useEffect } from 'react';
 import { ScanListTable } from '../components/scans/ScanListTable';
 import { Card } from '../components/ui/Card';
 import { useScans } from '../hooks/useScans';
+import type { ScanEntry } from '../types/scanList.types';
 
 interface Props {
   onViewScan: (scanId: string) => void;
   onViewIssues: (scanId: string) => void;
+  onEditScan: (scan: ScanEntry) => void;
 }
 
-export function ScansPage({ onViewScan, onViewIssues }: Props) {
-  const { scans, remove, refresh } = useScans();
+export function ScansPage({ onViewScan, onViewIssues, onEditScan }: Props) {
+  const { scans, remove, rerun, refresh } = useScans();
 
-  // Refresh from store each time this page is shown
   useEffect(() => {
     refresh();
   }, [refresh]);
@@ -25,6 +26,8 @@ export function ScansPage({ onViewScan, onViewIssues }: Props) {
           onViewScan={onViewScan}
           onViewIssues={onViewIssues}
           onDeleteScan={remove}
+          onRerunScan={rerun}
+          onEditScan={onEditScan}
         />
       </Card>
     </div>

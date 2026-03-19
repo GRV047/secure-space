@@ -5,6 +5,8 @@ import type { ScanEntry } from '../../types/scanList.types';
 
 interface Props {
   onStartScan: (scan: ScanEntry) => void;
+  initialScan?: ScanEntry;
+  onUpdateScan?: (id: string, patch: Partial<Omit<ScanEntry, 'id'>>) => void;
 }
 
 const inputClass =
@@ -13,10 +15,21 @@ const inputClass =
 const labelClass =
   'block text-[12px] font-semibold text-secondary uppercase tracking-wide mb-1.5';
 
-export function ScanSetupForm({ onStartScan }: Props) {
-  const [name, setName] = useState('');
-  const [url, setUrl] = useState('');
-  const [domainTags, setDomainTags] = useState<string[]>([]);
+function parseTags(raw: string): string[] {
+  return raw
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
+}
+
+export function ScanSetupForm({ onStartScan, initialScan, onUpdateScan }: Props) {
+  const isEdit = Boolean(initialScan);
+
+  const [name, setName] = useState(initialScan?.name ?? '');
+  const [url, setUrl]   = useState(initialScan?.url ?? '');
+  const [domainTags, setDomainTags] = useState<string[]>(
+    () => parseTags(initialScan?.excludedDomains ?? ''),
+  );
   const [domainInput, setDomainInput] = useState('');
   const [errors, setErrors] = useState<{ name?: string; url?: string }>({});
   const domainInputRef = useRef<HTMLInputElement>(null);
@@ -43,20 +56,24 @@ export function ScanSetupForm({ onStartScan }: Props) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+
+    const excludedDomains = domainTags.join(', ');
+
+    if (isEdit && initialScan && onUpdateScan) {
+      onUpdateScan(initialScan.id, { name: name.trim(), url: url.trim(), excludedDomains });
+    } else {
+      const scan: ScanEntry = {
+        id: `scan-${Date.now()}`,
+        name: name.trim(),
+        url: url.trim(),
+        excludedDomains,
+        status: 'Queued',
+        executionDate: new Date().toISOString(),
+        issues: 0,
+      };
+      onStartScan(scan);
     }
-    const scan: ScanEntry = {
-      id: `scan-${Date.now()}`,
-      name: name.trim(),
-      url: url.trim(),
-      excludedDomains: domainTags.join(', '),
-      status: 'Queued',
-      executionDate: new Date().toISOString(),
-      issues: 0,
-    };
-    onStartScan(scan);
   }
 
   return (
@@ -66,16 +83,11 @@ export function ScanSetupForm({ onStartScan }: Props) {
         <input
           type="text"
           value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            setErrors((p) => ({ ...p, name: undefined }));
-          }}
+          onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: undefined })); }}
           placeholder="e.g. My Web App"
           className={inputClass}
         />
-        {errors.name && (
-          <p className="mt-1 text-[11px] text-critical">{errors.name}</p>
-        )}
+        {errors.name && <p className="mt-1 text-[11px] text-critical">{errors.name}</p>}
       </div>
 
       <div>
@@ -83,22 +95,16 @@ export function ScanSetupForm({ onStartScan }: Props) {
         <input
           type="text"
           value={url}
-          onChange={(e) => {
-            setUrl(e.target.value);
-            setErrors((p) => ({ ...p, url: undefined }));
-          }}
+          onChange={(e) => { setUrl(e.target.value); setErrors((p) => ({ ...p, url: undefined })); }}
           placeholder="https://example.com"
           className={inputClass}
         />
-        {errors.url && (
-          <p className="mt-1 text-[11px] text-critical">{errors.url}</p>
-        )}
+        {errors.url && <p className="mt-1 text-[11px] text-critical">{errors.url}</p>}
       </div>
 
       <div>
         <label className={labelClass}>Domains to be Excluded</label>
         <div className="flex items-start gap-2">
-          {/* Tag input box */}
           <div
             onClick={() => domainInputRef.current?.focus()}
             className="flex-1 min-h-[42px] bg-card border border-border rounded-lg px-3 py-2 flex flex-wrap gap-1.5 cursor-text focus-within:border-accent transition-colors"
@@ -128,8 +134,6 @@ export function ScanSetupForm({ onStartScan }: Props) {
               className="flex-1 min-w-[140px] bg-transparent border-none outline-none text-[13px] text-primary placeholder-muted py-0.5"
             />
           </div>
-
-          {/* Add button */}
           <button
             type="button"
             onClick={addDomain}
@@ -140,13 +144,8 @@ export function ScanSetupForm({ onStartScan }: Props) {
         </div>
       </div>
 
-      <Button
-        type="submit"
-        variant="primary"
-        size="lg"
-        className="w-full justify-center mt-2"
-      >
-        Start Scan
+      <Button type="submit" variant="primary" size="lg" className="w-full justify-center mt-2">
+        {isEdit ? 'Save Changes' : 'Start Scan'}
       </Button>
     </form>
   );
