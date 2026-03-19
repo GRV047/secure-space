@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Plus, X } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { createScan } from '../../services/scanListService';
 import type { ScanEntry } from '../../types/scanList.types';
 
 interface Props {
@@ -25,13 +26,17 @@ function parseTags(raw: string): string[] {
 export function ScanSetupForm({ onStartScan, initialScan, onUpdateScan }: Props) {
   const isEdit = Boolean(initialScan);
 
-  const [name, setName] = useState(initialScan?.name ?? '');
-  const [url, setUrl]   = useState(initialScan?.url ?? '');
+  const [projectId, setProjectId] = useState('');
+  const [name, setName]           = useState(initialScan?.name ?? '');
+  const [url, setUrl]             = useState(initialScan?.url ?? '');
+  const [includeSubdomains, setIncludeSubdomains] = useState(false);
   const [domainTags, setDomainTags] = useState<string[]>(
     () => parseTags(initialScan?.excludedDomains ?? ''),
   );
   const [domainInput, setDomainInput] = useState('');
-  const [errors, setErrors] = useState<{ name?: string; url?: string }>({});
+  const [loading, setLoading]         = useState(false);
+  const [apiError, setApiError]       = useState<string | null>(null);
+  const [errors, setErrors]           = useState<{ name?: string; url?: string; projectId?: string }>({});
   const domainInputRef = useRef<HTMLInputElement>(null);
 
   function addDomain() {
@@ -47,37 +52,64 @@ export function ScanSetupForm({ onStartScan, initialScan, onUpdateScan }: Props)
   }
 
   function validate() {
-    const errs: { name?: string; url?: string } = {};
+    const errs: { name?: string; url?: string; projectId?: string } = {};
+    if (!isEdit && !projectId.trim()) errs.projectId = 'Project ID is required.';
     if (!name.trim()) errs.name = 'Application name is required.';
     if (!url.trim()) errs.url = 'URL is required.';
     return errs;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setApiError(null);
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
 
-    const excludedDomains = domainTags.join(', ');
-
     if (isEdit && initialScan && onUpdateScan) {
-      onUpdateScan(initialScan.id, { name: name.trim(), url: url.trim(), excludedDomains });
-    } else {
-      const scan: ScanEntry = {
-        id: `scan-${Date.now()}`,
+      // Edit path — sync, no API call yet
+      onUpdateScan(initialScan.id, {
         name: name.trim(),
         url: url.trim(),
-        excludedDomains,
-        status: 'Queued',
-        executionDate: new Date().toISOString(),
-        issues: 0,
-      };
-      onStartScan(scan);
+        excludedDomains: domainTags.join(', '),
+      });
+      return;
+    }
+
+    // Create path — call service (mock or real API)
+    setLoading(true);
+    try {
+      const entry = await createScan({
+        projectId: Number(projectId),
+        name: name.trim(),
+        url: url.trim(),
+        includeSubdomains,
+        excludedDomains: domainTags,
+      });
+      onStartScan(entry);
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Project ID — only shown when creating */}
+      {!isEdit && (
+        <div>
+          <label className={labelClass}>Project ID</label>
+          <input
+            type="text"
+            value={projectId}
+            onChange={(e) => { setProjectId(e.target.value); setErrors((p) => ({ ...p, projectId: undefined })); }}
+            placeholder="e.g. 42"
+            className={inputClass}
+          />
+          {errors.projectId && <p className="mt-1 text-[11px] text-critical">{errors.projectId}</p>}
+        </div>
+      )}
+
       <div>
         <label className={labelClass}>Application Name</label>
         <input
@@ -100,6 +132,18 @@ export function ScanSetupForm({ onStartScan, initialScan, onUpdateScan }: Props)
           className={inputClass}
         />
         {errors.url && <p className="mt-1 text-[11px] text-critical">{errors.url}</p>}
+      </div>
+
+      <div>
+        <label className="flex items-center gap-2 cursor-pointer w-fit">
+          <input
+            type="checkbox"
+            checked={includeSubdomains}
+            onChange={(e) => setIncludeSubdomains(e.target.checked)}
+            className="w-4 h-4 accent-accent cursor-pointer"
+          />
+          <span className="text-[13px] text-primary">Include subdomains</span>
+        </label>
       </div>
 
       <div>
@@ -144,8 +188,20 @@ export function ScanSetupForm({ onStartScan, initialScan, onUpdateScan }: Props)
         </div>
       </div>
 
-      <Button type="submit" variant="primary" size="lg" className="w-full justify-center mt-2">
-        {isEdit ? 'Save Changes' : 'Start Scan'}
+      {apiError && (
+        <p className="text-[12px] text-critical bg-critical/10 border border-critical/20 rounded-lg px-3 py-2">
+          {apiError}
+        </p>
+      )}
+
+      <Button
+        type="submit"
+        variant="primary"
+        size="lg"
+        className="w-full justify-center mt-2"
+        disabled={loading || !name.trim() || !url.trim() || (!isEdit && !projectId.trim())}
+      >
+        {loading ? 'Starting…' : isEdit ? 'Save Changes' : 'Start Scan'}
       </Button>
     </form>
   );

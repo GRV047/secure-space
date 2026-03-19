@@ -1,4 +1,7 @@
+import { USE_MOCK } from '../config/env';
 import type { AuthUser, LoginCredentials, SignupData } from '../types/auth.types';
+
+// ─── Mock implementations ─────────────────────────────────────────────────────
 
 const MOCK_USER: AuthUser = {
   id: 'user-001',
@@ -6,10 +9,8 @@ const MOCK_USER: AuthUser = {
   email: 'gourav@dz.com',
 };
 
-// Swap these with real API calls when backend is ready.
-
-export async function login(credentials: LoginCredentials): Promise<AuthUser> {
-  await new Promise((r) => setTimeout(r, 800)); // simulate network delay
+async function loginMock(credentials: LoginCredentials): Promise<AuthUser> {
+  await new Promise((r) => setTimeout(r, 800));
   if (!credentials.email || !credentials.password) {
     throw new Error('Email and password are required.');
   }
@@ -19,7 +20,7 @@ export async function login(credentials: LoginCredentials): Promise<AuthUser> {
   return { ...MOCK_USER, email: credentials.email };
 }
 
-export async function signup(data: SignupData): Promise<AuthUser> {
+async function signupMock(data: SignupData): Promise<AuthUser> {
   await new Promise((r) => setTimeout(r, 800));
   if (!data.name || !data.email || !data.password) {
     throw new Error('All fields are required.');
@@ -33,6 +34,26 @@ export async function signup(data: SignupData): Promise<AuthUser> {
   return { id: `user-${Date.now()}`, name: data.name, email: data.email };
 }
 
-export async function logout(): Promise<void> {
+async function logoutMock(): Promise<void> {
   await new Promise((r) => setTimeout(r, 200));
 }
+
+// ─── API implementations (stubs — replace with real calls) ────────────────────
+
+async function loginApi(_credentials: LoginCredentials): Promise<AuthUser> {
+  throw new Error('Auth API not implemented yet.');
+}
+
+async function signupApi(_data: SignupData): Promise<AuthUser> {
+  throw new Error('Auth API not implemented yet.');
+}
+
+async function logoutApi(): Promise<void> {
+  throw new Error('Auth API not implemented yet.');
+}
+
+// ─── Exports (driven by USE_MOCK flag) ────────────────────────────────────────
+
+export const login  = USE_MOCK ? loginMock  : loginApi;
+export const signup = USE_MOCK ? signupMock : signupApi;
+export const logout = USE_MOCK ? logoutMock : logoutApi;

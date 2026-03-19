@@ -1,3 +1,4 @@
+import { USE_MOCK } from '../config/env';
 import type {
   ScanOverview,
   ScanDetails,
@@ -15,28 +16,63 @@ import {
   mockExecutionLog,
 } from '../mock/scanOverview.mock';
 
-// Swap these implementations with real API calls when backend is ready.
+// ─── Mock implementations ─────────────────────────────────────────────────────
 
-export async function fetchScanOverview(_scanId: string): Promise<ScanOverview> {
+async function fetchScanOverviewMock(_scanId: string): Promise<ScanOverview> {
   return Promise.resolve(mockScanOverview);
 }
 
-export async function fetchScanDetails(_scanId: string): Promise<ScanDetails> {
+async function fetchScanDetailsMock(_scanId: string): Promise<ScanDetails> {
   return Promise.resolve(mockScanDetails);
 }
 
-export async function fetchScanTimeline(_scanId: string): Promise<TimelineEvent[]> {
+async function fetchScanTimelineMock(_scanId: string): Promise<TimelineEvent[]> {
   return Promise.resolve(mockTimeline);
 }
 
-export async function fetchSeverityData(_scanId: string): Promise<SeverityDataPoint[]> {
+async function fetchSeverityDataMock(_scanId: string): Promise<SeverityDataPoint[]> {
   return Promise.resolve(mockSeverityData);
 }
 
-export async function fetchAppExplorationData(_scanId: string): Promise<AppExplorationData> {
+async function fetchAppExplorationDataMock(_scanId: string): Promise<AppExplorationData> {
   return Promise.resolve(mockAppExplorationData);
 }
 
-export async function fetchExecutionLog(_scanId: string): Promise<ExecutionLogEntry[]> {
+async function fetchExecutionLogMock(_scanId: string): Promise<ExecutionLogEntry[]> {
   return Promise.resolve(mockExecutionLog);
 }
+
+// ─── API implementations (stubs — replace with real calls) ────────────────────
+
+async function fetchScanOverviewApi(_scanId: string): Promise<ScanOverview> {
+  throw new Error('Scan API not implemented yet.');
+}
+
+async function fetchScanDetailsApi(_scanId: string): Promise<ScanDetails> {
+  throw new Error('Scan API not implemented yet.');
+}
+
+async function fetchScanTimelineApi(_scanId: string): Promise<TimelineEvent[]> {
+  throw new Error('Scan API not implemented yet.');
+}
+
+async function fetchSeverityDataApi(_scanId: string): Promise<SeverityDataPoint[]> {
+  throw new Error('Scan API not implemented yet.');
+}
+
+async function fetchAppExplorationDataApi(_scanId: string): Promise<AppExplorationData> {
+  throw new Error('Scan API not implemented yet.');
+}
+
+async function fetchExecutionLogApi(_scanId: string): Promise<ExecutionLogEntry[]> {
+  throw new Error('Scan API not implemented yet.');
+}
+
+// ─── Exports (driven by USE_MOCK flag) ────────────────────────────────────────
+
+export const fetchScanOverview        = USE_MOCK ? fetchScanOverviewMock        : fetchScanOverviewApi;
+export const fetchScanDetails         = USE_MOCK ? fetchScanDetailsMock         : fetchScanDetailsApi;
+export const fetchScanTimeline        = USE_MOCK ? fetchScanTimelineMock        : fetchScanTimelineApi;
+export const fetchSeverityData        = USE_MOCK ? fetchSeverityDataMock        : fetchSeverityDataApi;
+export const fetchAppExplorationData  = USE_MOCK ? fetchAppExplorationDataMock  : fetchAppExplorationDataApi;
+export const fetchExecutionLog        = USE_MOCK ? fetchExecutionLogMock        : fetchExecutionLogApi;
