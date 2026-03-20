@@ -31,6 +31,18 @@ function mapResponseToEntry(res: CreateScanResponse, input: CreateScanInput): Sc
   };
 }
 
+function mapListItemToEntry(res: CreateScanResponse): ScanEntry {
+  return {
+    id: String(res.id),
+    name: res.start_url || `Scan #${res.id}`,
+    url: res.effective_start_url || res.start_url,
+    excludedDomains: res.exclusion_rules.map((r) => r.pattern).join(', '),
+    status: API_STATUS_MAP[res.status.toLowerCase()] ?? 'Queued',
+    executionDate: res.queued_at || new Date().toISOString(),
+    issues: 0,
+  };
+}
+
 function buildPayload(input: CreateScanInput): CreateScanPayload {
   return {
     include_subdomains: input.includeSubdomains,
@@ -41,7 +53,7 @@ function buildPayload(input: CreateScanInput): CreateScanPayload {
 
 // ─── Mock implementations ─────────────────────────────────────────────────────
 
-function getScansMock(): ScanEntry[] {
+async function getScansMock(_projectId?: number): Promise<ScanEntry[]> {
   return [...scansStore];
 }
 
@@ -74,8 +86,10 @@ function updateScanMock(id: string, patch: Partial<Omit<ScanEntry, 'id'>>): void
 
 // ─── API implementations (stubs — replace with real calls) ────────────────────
 
-function getScansApi(): ScanEntry[] {
-  throw new Error('Scan list API not implemented yet.');
+async function getScansApi(projectId?: number): Promise<ScanEntry[]> {
+  if (!projectId) return [];
+  const response = await apiRequest<CreateScanResponse[]>(`/projects/${projectId}/scans/`);
+  return response.map(mapListItemToEntry);
 }
 
 function addScanApi(_scan: ScanEntry): void {
@@ -141,7 +155,7 @@ async function createScanApi(input: CreateScanInput): Promise<ScanEntry> {
 
 // ─── Exports (driven by USE_MOCK flag) ────────────────────────────────────────
 
-export const getScans    = USE_MOCK ? getScansMock    : getScansApi;
+export const getScans = USE_MOCK ? getScansMock : getScansApi;
 export const addScan     = USE_MOCK ? addScanMock     : addScanApi;
 export const deleteScan  = USE_MOCK ? deleteScanMock  : deleteScanApi;
 export const rerunScan   = USE_MOCK ? rerunScanMock   : rerunScanApi;

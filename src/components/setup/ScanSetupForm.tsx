@@ -1,15 +1,15 @@
 import { useState, useRef } from 'react';
 import { Plus, X } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { createScan } from '../../services/scanListService';
+import { useCreateScan } from '../../hooks/useCreateScan';
 import type { ScanEntry } from '../../types/scanList.types';
 import type { Project } from '../../types/project.types';
 
 interface Props {
-  onStartScan: (scan: ScanEntry) => void;
+  onStartScan?: (scan: ScanEntry) => void;
   initialScan?: ScanEntry;
   onUpdateScan?: (id: string, patch: Partial<Omit<ScanEntry, 'id'>>) => void;
-  projects: Project[];
+  projects?: Project[];
 }
 
 const inputClass =
@@ -18,27 +18,16 @@ const inputClass =
 const labelClass =
   'block text-[12px] font-semibold text-secondary uppercase tracking-wide mb-1.5';
 
-function parseTags(raw: string): string[] {
-  return raw
-    .split(',')
-    .map((t) => t.trim())
-    .filter(Boolean);
-}
+export function ScanSetupForm(_props: Props) {
+  const { doCreateScan, isLoading, error } = useCreateScan();
 
-export function ScanSetupForm({ onStartScan, initialScan, onUpdateScan, projects }: Props) {
-  const isEdit = Boolean(initialScan);
-
-  const [projectId, setProjectId] = useState('');
-  const [name, setName]           = useState(initialScan?.name ?? '');
-  const [url, setUrl]             = useState(initialScan?.url ?? '');
-  const [includeSubdomains, setIncludeSubdomains] = useState(false);
-  const [domainTags, setDomainTags] = useState<string[]>(
-    () => parseTags(initialScan?.excludedDomains ?? ''),
-  );
+  const [projectId, setProjectId]   = useState('');
+  const [name, setName]             = useState('');
+  const [url, setUrl]               = useState('');
+  const [domainTags, setDomainTags] = useState<string[]>([]);
   const [domainInput, setDomainInput] = useState('');
-  const [loading, setLoading]         = useState(false);
-  const [apiError, setApiError]       = useState<string | null>(null);
-  const [errors, setErrors]           = useState<{ name?: string; url?: string; projectId?: string }>({});
+  const [errors, setErrors]         = useState<{ projectId?: string; name?: string }>({});
+  const [successMsg, setSuccessMsg] = useState('');
   const domainInputRef = useRef<HTMLInputElement>(null);
 
   function addDomain() {
@@ -49,71 +38,60 @@ export function ScanSetupForm({ onStartScan, initialScan, onUpdateScan, projects
     domainInputRef.current?.focus();
   }
 
-  function removeTag(index: number) {
-    setDomainTags((prev) => prev.filter((_, i) => i !== index));
+  function removeTag(i: number) {
+    setDomainTags((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  function validate() {
-    const errs: { name?: string; url?: string; projectId?: string } = {};
-    if (!isEdit && !projectId.trim()) errs.projectId = 'Project ID is required.';
+  function validate(): boolean {
+    const errs: { projectId?: string; name?: string } = {};
+    const pid = Number(projectId);
+    if (!projectId.trim() || !Number.isInteger(pid) || pid <= 0)
+      errs.projectId = 'Project ID must be a valid integer greater than 0.';
     if (!name.trim()) errs.name = 'Application name is required.';
-    if (!url.trim()) errs.url = 'URL is required.';
-    return errs;
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setApiError(null);
-    const errs = validate();
-    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    if (!validate()) return;
 
-    if (isEdit && initialScan && onUpdateScan) {
-      // Edit path — sync, no API call yet
-      onUpdateScan(initialScan.id, {
-        name: name.trim(),
-        url: url.trim(),
-        excludedDomains: domainTags.join(', '),
-      });
-      return;
-    }
+    const result = await doCreateScan(Number(projectId), {
+      include_subdomains: false,
+      crawl_session_id: null,
+      exclusions: domainTags.length > 0
+        ? [{ pattern: domainTags.join(','), type: 'path' as const }]
+        : [],
+    });
 
-    // Create path — call service (mock or real API)
-    setLoading(true);
-    try {
-      const entry = await createScan({
-        projectId: Number(projectId),
-        name: name.trim(),
-        url: url.trim(),
-        includeSubdomains,
-        excludedDomains: domainTags,
-      });
-      onStartScan(entry);
-    } catch (err) {
-      setApiError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
+    if (result) {
+      setSuccessMsg('Scan started successfully');
+      setTimeout(() => setSuccessMsg(''), 3000);
+      setTimeout(() => {
+        const state = { page: 'scans', projectId: Number(projectId) };
+        window.history.pushState(state, '');
+        window.dispatchEvent(new PopStateEvent('popstate', { state }));
+      }, 1500);
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Project selector — only shown when creating */}
-      {!isEdit && (
-        <div>
-          <label className={labelClass}>Project ID</label>
-          <input
-            type="text"
-            value={projectId}
-            onChange={(e) => { setProjectId(e.target.value); setErrors((p) => ({ ...p, projectId: undefined })); }}
-            placeholder="e.g. 42"
-            className={inputClass}
-          />
-          {errors.projectId && <p className="mt-1 text-[11px] text-critical">{errors.projectId}</p>}
-        </div>
-      )}
+      <div>
+        <label className={labelClass}>Project Name <span className="text-critical">*</span></label>
+        <input
+          type="number"
+          value={projectId}
+          onChange={(e) => { setProjectId(e.target.value); setErrors((p) => ({ ...p, projectId: undefined })); }}
+          placeholder="Enter Project ID"
+          className={inputClass}
+          min={1}
+        />
+        {errors.projectId && <p className="mt-1 text-[11px] text-critical">{errors.projectId}</p>}
+      </div>
 
       <div>
-        <label className={labelClass}>Application Name</label>
+        <label className={labelClass}>App Name <span className="text-critical">*</span></label>
         <input
           type="text"
           value={name}
@@ -125,31 +103,7 @@ export function ScanSetupForm({ onStartScan, initialScan, onUpdateScan, projects
       </div>
 
       <div>
-        <label className={labelClass}>URL</label>
-        <input
-          type="text"
-          value={url}
-          onChange={(e) => { setUrl(e.target.value); setErrors((p) => ({ ...p, url: undefined })); }}
-          placeholder="https://example.com"
-          className={inputClass}
-        />
-        {errors.url && <p className="mt-1 text-[11px] text-critical">{errors.url}</p>}
-      </div>
-
-      <div>
-        <label className="flex items-center gap-2 cursor-pointer w-fit">
-          <input
-            type="checkbox"
-            checked={includeSubdomains}
-            onChange={(e) => setIncludeSubdomains(e.target.checked)}
-            className="w-4 h-4 accent-accent cursor-pointer"
-          />
-          <span className="text-[13px] text-primary">Include subdomains</span>
-        </label>
-      </div>
-
-      <div>
-        <label className={labelClass}>Domains to be Excluded</label>
+        <label className={labelClass}>Domains Name</label>
         <div className="flex items-start gap-2">
           <div
             onClick={() => domainInputRef.current?.focus()}
@@ -190,9 +144,15 @@ export function ScanSetupForm({ onStartScan, initialScan, onUpdateScan, projects
         </div>
       </div>
 
-      {apiError && (
+      {error && (
         <p className="text-[12px] text-critical bg-critical/10 border border-critical/20 rounded-lg px-3 py-2">
-          {apiError}
+          {error}
+        </p>
+      )}
+
+      {successMsg && (
+        <p className="text-[12px] text-success bg-success/10 border border-success/20 rounded-lg px-3 py-2">
+          {successMsg}
         </p>
       )}
 
@@ -201,9 +161,9 @@ export function ScanSetupForm({ onStartScan, initialScan, onUpdateScan, projects
         variant="primary"
         size="lg"
         className="w-full justify-center mt-2"
-        disabled={loading || !name.trim() || !url.trim() || (!isEdit && (projects.length === 0 || !projectId))}
+        disabled={isLoading || !projectId.trim() || !name.trim()}
       >
-        {loading ? 'Starting…' : isEdit ? 'Save Changes' : 'Start Scan'}
+        {isLoading ? 'Starting Scan...' : 'Start Scan'}
       </Button>
     </form>
   );

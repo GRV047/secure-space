@@ -73,8 +73,8 @@ export function CreateProjectModal({ onClose, onSuccess }: Props) {
     }
 
     if (!addCrawling) {
-      setStep('idle');
       onSuccess(project, false);
+      onClose();
       return;
     }
 
@@ -87,6 +87,7 @@ export function CreateProjectModal({ onClose, onSuccess }: Props) {
       setApiError('Project created but crawl session failed. Please try again.');
       setStep('idle');
       onSuccess(project, false);
+      onClose();
       return;
     }
 
@@ -97,8 +98,8 @@ export function CreateProjectModal({ onClose, onSuccess }: Props) {
       // non-critical — project + session already created
     }
 
-    setStep('idle');
     onSuccess(project, true);
+    onClose();
   }
 
   function handleBackdrop(e: React.MouseEvent<HTMLDivElement>) {

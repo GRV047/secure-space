@@ -6,8 +6,8 @@ import type { ScanEntry, ScanStatus } from '../../types/scanList.types';
 
 interface Props {
   scans: ScanEntry[];
-  onViewScan: (scanId: string) => void;
-  onViewIssues: (scanId: string) => void;
+  onViewScan: (scan: ScanEntry) => void;
+  onViewIssues: (scan: ScanEntry) => void;
   onDeleteScan: (scanId: string) => void;
   onRerunScan: (scanId: string) => void;
   onEditScan: (scan: ScanEntry) => void;
@@ -119,7 +119,7 @@ export function ScanListTable({ scans, onViewScan, onViewIssues, onDeleteScan, o
       header: 'Name',
       render: (row: ScanEntry) => (
         <button
-          onClick={(e) => { e.stopPropagation(); onViewScan(row.id); }}
+          onClick={(e) => { e.stopPropagation(); onViewScan(row); }}
           className="text-accent hover:underline text-[13px] font-medium text-left cursor-pointer border-none bg-transparent p-0"
         >
           {row.name}
@@ -152,7 +152,7 @@ export function ScanListTable({ scans, onViewScan, onViewIssues, onDeleteScan, o
       header: 'Issues',
       render: (row: ScanEntry) => (
         <button
-          onClick={(e) => { e.stopPropagation(); onViewIssues(row.id); }}
+          onClick={(e) => { e.stopPropagation(); onViewIssues(row); }}
           className="text-accent hover:underline text-[13px] font-medium cursor-pointer border-none bg-transparent p-0"
         >
           {row.issues}

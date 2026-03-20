@@ -2,7 +2,7 @@ import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { PageLayout } from './components/layout/PageLayout';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
-import { addScan, getScans, rerunScan, updateScan } from './services/scanListService';
+import { addScan, rerunScan, updateScan } from './services/scanListService';
 import type { AuthUser } from './types/auth.types';
 import type { ScanEntry, ScanStatus } from './types/scanList.types';
 
@@ -18,6 +18,7 @@ interface HistoryState {
   page: Page;
   scanId?: string;
   tab?: 'overview' | 'issues';
+  projectId?: number;
 }
 
 const pageTitles: Record<Page, string> = {
@@ -39,6 +40,8 @@ export default function App() {
   const [activeScanUrl,    setActiveScanUrl]    = useState<string>('');
   const [activeScanStatus, setActiveScanStatus] = useState<ScanStatus>('Completed');
   const [editScan,         setEditScan]         = useState<ScanEntry | undefined>(undefined);
+  const [activeProjectId,  setActiveProjectId]  = useState<number | undefined>(undefined);
+  const [activeScanEntry,  setActiveScanEntry]  = useState<ScanEntry | undefined>(undefined);
 
   // Ref so the popstate handler always reads the latest user without re-registering
   const userRef = useRef<AuthUser | null>(null);
@@ -73,6 +76,9 @@ export default function App() {
 
       // Normal authenticated navigation
       setPage(target);
+      if (target === 'scans' && state?.projectId) {
+        setActiveProjectId(state.projectId);
+      }
       if (target === 'dashboard' && state?.scanId) {
         setActiveScanId(state.scanId);
         setDefaultTab(state.tab ?? 'overview');
@@ -128,17 +134,16 @@ export default function App() {
     pushPage('setup');
   }
 
-  function setActiveScan(scanId: string) {
-    const entry = getScans().find((s) => s.id === scanId);
-    setActiveScanId(scanId);
-    setActiveScanName(entry?.name ?? '');
-    setActiveScanUrl(entry?.url ?? '');
-    setActiveScanStatus(entry?.status ?? 'Completed');
+  function setActiveScan(entry: ScanEntry) {
+    setActiveScanEntry(entry);
+    setActiveScanId(entry.id);
+    setActiveScanName(entry.name);
+    setActiveScanUrl(entry.url);
+    setActiveScanStatus(entry.status);
   }
 
   function handleDashboardEdit() {
-    const entry = getScans().find((s) => s.id === activeScanId);
-    if (entry) handleEditScan(entry);
+    if (activeScanEntry) handleEditScan(activeScanEntry);
   }
 
   function handleDashboardRestart() {
@@ -146,16 +151,16 @@ export default function App() {
     pushPage('scans');
   }
 
-  function handleViewScan(scanId: string) {
-    setActiveScan(scanId);
+  function handleViewScan(scan: ScanEntry) {
+    setActiveScan(scan);
     setDefaultTab('overview');
-    pushPage('dashboard', { scanId, tab: 'overview' });
+    pushPage('dashboard', { scanId: scan.id, tab: 'overview' });
   }
 
-  function handleViewIssues(scanId: string) {
-    setActiveScan(scanId);
+  function handleViewIssues(scan: ScanEntry) {
+    setActiveScan(scan);
     setDefaultTab('issues');
-    pushPage('dashboard', { scanId, tab: 'issues' });
+    pushPage('dashboard', { scanId: scan.id, tab: 'issues' });
   }
 
   if (page === 'login') {
@@ -189,7 +194,7 @@ export default function App() {
           <SetupPage onStartScan={handleStartScan} editScan={editScan} onUpdateScan={handleUpdateScan} />
         )}
         {page === 'scans' && (
-          <ScansPage onViewScan={handleViewScan} onViewIssues={handleViewIssues} onEditScan={handleEditScan} />
+          <ScansPage projectId={activeProjectId} onViewScan={handleViewScan} onViewIssues={handleViewIssues} onEditScan={handleEditScan} />
         )}
         {page === 'dashboard' && (
           <ScanDashboard

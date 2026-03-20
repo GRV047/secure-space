@@ -1,4 +1,12 @@
-export type ScanStatus = 'running' | 'completed' | 'failed' | 'paused';
+export type ScanStatus = 'running'
+  | 'completed'
+  | 'failed'
+  | 'paused'
+  | 'queued'
+  | 'initialized'
+  | 'crawling'
+  | 'scanning'
+  | 'processing';
 
 export interface ScanOverview {
   id: string;
@@ -60,4 +68,33 @@ export interface ExecutionLogEntry {
   timestamp: string;
   testId: string;
   message: string;
+}
+
+// ─── Crawl session types ──────────────────────────────────────────────────────
+
+export interface CrawlSession {
+  id: number;
+  status: string;
+  [key: string]: unknown;
+}
+
+// ─── Scan creation types ──────────────────────────────────────────────────────
+
+export interface ScanExclusion {
+  pattern: string;
+  type: 'path' | 'domain' | 'regex';
+}
+
+export interface CreateScanPayload {
+  include_subdomains: boolean;
+  crawl_session_id: number | null;
+  exclusions: ScanExclusion[];
+}
+
+export interface CreatedScan {
+  id: number;
+  project_id: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
 }

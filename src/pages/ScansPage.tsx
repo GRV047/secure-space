@@ -5,13 +5,14 @@ import { useScans } from '../hooks/useScans';
 import type { ScanEntry } from '../types/scanList.types';
 
 interface Props {
-  onViewScan: (scanId: string) => void;
-  onViewIssues: (scanId: string) => void;
+  projectId?: number;
+  onViewScan: (scan: ScanEntry) => void;
+  onViewIssues: (scan: ScanEntry) => void;
   onEditScan: (scan: ScanEntry) => void;
 }
 
-export function ScansPage({ onViewScan, onViewIssues, onEditScan }: Props) {
-  const { scans, remove, rerun, refresh } = useScans();
+export function ScansPage({ projectId, onViewScan, onViewIssues, onEditScan }: Props) {
+  const { scans, remove, rerun, refresh } = useScans(projectId);
 
   useEffect(() => {
     refresh();

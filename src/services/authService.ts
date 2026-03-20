@@ -38,18 +38,22 @@ async function logoutMock(): Promise<void> {
   await new Promise((r) => setTimeout(r, 200));
 }
 
-// ─── API implementations (stubs — replace with real calls) ────────────────────
+// ─── API implementations (login bypassed until auth endpoint is ready) ────────
 
-async function loginApi(_credentials: LoginCredentials): Promise<AuthUser> {
-  throw new Error('Auth API not implemented yet.');
+async function loginApi(credentials: LoginCredentials): Promise<AuthUser> {
+  // Bypass: accept any credentials and return a local admin user
+  if (!credentials.email || !credentials.password) {
+    throw new Error('Email and password are required.');
+  }
+  return { id: 'admin', name: 'Admin', email: credentials.email };
 }
 
 async function signupApi(_data: SignupData): Promise<AuthUser> {
-  throw new Error('Auth API not implemented yet.');
+  throw new Error('Signup via API is not yet implemented.');
 }
 
 async function logoutApi(): Promise<void> {
-  throw new Error('Auth API not implemented yet.');
+  // nothing to clear
 }
 
 // ─── Exports (driven by USE_MOCK flag) ────────────────────────────────────────

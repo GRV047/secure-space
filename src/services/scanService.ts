@@ -1,4 +1,5 @@
 import { USE_MOCK } from '../config/env';
+import { apiRequest } from '../config/api';
 import type {
   ScanOverview,
   ScanDetails,
@@ -6,6 +7,9 @@ import type {
   SeverityDataPoint,
   AppExplorationData,
   ExecutionLogEntry,
+  CreateScanPayload,
+  CreatedScan,
+  CrawlSession,
 } from '../types/scan.types';
 import {
   mockScanOverview,
@@ -42,37 +46,46 @@ async function fetchExecutionLogMock(_scanId: string): Promise<ExecutionLogEntry
   return Promise.resolve(mockExecutionLog);
 }
 
-// ─── API implementations (stubs — replace with real calls) ────────────────────
+// ─── fetchCrawlSessions ───────────────────────────────────────────────────────
 
-async function fetchScanOverviewApi(_scanId: string): Promise<ScanOverview> {
-  throw new Error('Scan API not implemented yet.');
+async function fetchCrawlSessionsMock(_projectId: number): Promise<CrawlSession[]> {
+  await new Promise((r) => setTimeout(r, 200));
+  return [{ id: 37, status: 'completed' }];
 }
 
-async function fetchScanDetailsApi(_scanId: string): Promise<ScanDetails> {
-  throw new Error('Scan API not implemented yet.');
+async function fetchCrawlSessionsApi(projectId: number): Promise<CrawlSession[]> {
+  return apiRequest<CrawlSession[]>(`/projects/${projectId}/crawl-sessions/`);
 }
 
-async function fetchScanTimelineApi(_scanId: string): Promise<TimelineEvent[]> {
-  throw new Error('Scan API not implemented yet.');
+export const fetchCrawlSessions = USE_MOCK ? fetchCrawlSessionsMock : fetchCrawlSessionsApi;
+
+// ─── createScan ───────────────────────────────────────────────────────────────
+
+async function createScanMock(_projectId: number, _payload: CreateScanPayload): Promise<CreatedScan> {
+  await new Promise((r) => setTimeout(r, 600));
+  return {
+    id: Date.now(),
+    project_id: _projectId,
+    status: 'queued',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
 }
 
-async function fetchSeverityDataApi(_scanId: string): Promise<SeverityDataPoint[]> {
-  throw new Error('Scan API not implemented yet.');
+async function createScanApi(projectId: number, payload: CreateScanPayload): Promise<CreatedScan> {
+  return apiRequest<CreatedScan>(`/projects/${projectId}/scans/`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }
 
-async function fetchAppExplorationDataApi(_scanId: string): Promise<AppExplorationData> {
-  throw new Error('Scan API not implemented yet.');
-}
+export const createScan = USE_MOCK ? createScanMock : createScanApi;
 
-async function fetchExecutionLogApi(_scanId: string): Promise<ExecutionLogEntry[]> {
-  throw new Error('Scan API not implemented yet.');
-}
+// ─── Exports (always mock — API not ready for dashboard) ─────────────────────
 
-// ─── Exports (driven by USE_MOCK flag) ────────────────────────────────────────
-
-export const fetchScanOverview        = USE_MOCK ? fetchScanOverviewMock        : fetchScanOverviewApi;
-export const fetchScanDetails         = USE_MOCK ? fetchScanDetailsMock         : fetchScanDetailsApi;
-export const fetchScanTimeline        = USE_MOCK ? fetchScanTimelineMock        : fetchScanTimelineApi;
-export const fetchSeverityData        = USE_MOCK ? fetchSeverityDataMock        : fetchSeverityDataApi;
-export const fetchAppExplorationData  = USE_MOCK ? fetchAppExplorationDataMock  : fetchAppExplorationDataApi;
-export const fetchExecutionLog        = USE_MOCK ? fetchExecutionLogMock        : fetchExecutionLogApi;
+export const fetchScanOverview        = fetchScanOverviewMock;
+export const fetchScanDetails         = fetchScanDetailsMock;
+export const fetchScanTimeline        = fetchScanTimelineMock;
+export const fetchSeverityData        = fetchSeverityDataMock;
+export const fetchAppExplorationData  = fetchAppExplorationDataMock;
+export const fetchExecutionLog        = fetchExecutionLogMock;
